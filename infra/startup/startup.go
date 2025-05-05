@@ -31,8 +31,8 @@ func Start() error {
 		if vars.Config.Listen == "" {
 			vars.Config.Listen = ":9008"
 		}
-		if vars.Config.Host == "" {
-			vars.Config.Host = "http://127.0.0.1:9008"
+		if vars.Config.Redirect == "" {
+			vars.Config.Redirect = "http://127.0.0.1:9008"
 		}
 		if vars.Config.LogLevel == "" {
 			vars.Config.LogLevel = "info"
