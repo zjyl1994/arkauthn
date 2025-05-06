@@ -76,7 +76,7 @@ func loginAuthnHandler(c *fiber.Ctx) error {
 	if len(req.Remember) > 0 {
 		dur = 30 * 24 * time.Hour
 	} else {
-		dur = 12 * time.Hour
+		dur = time.Hour
 	}
 	token, err := utils.GenerateToken(user, dur)
 	if err != nil {
@@ -87,10 +87,11 @@ func loginAuthnHandler(c *fiber.Ctx) error {
 	if err != nil {
 		return err
 	}
+	expireAt := time.Now().Add(dur)
 	cookie := &fiber.Cookie{
 		Name:     "arkauthn",
 		Value:    token,
-		Expires:  time.Now().Add(dur),
+		Expires:  expireAt,
 		HTTPOnly: true,
 		Domain:   "." + rootDomain,
 	}
@@ -102,7 +103,7 @@ func loginAuthnHandler(c *fiber.Ctx) error {
 	if len(req.Redirect) > 0 {
 		return c.Redirect(req.Redirect)
 	}
-	return c.SendString(fmt.Sprintf("登录成功，欢迎 %s", user))
+	return c.SendString(fmt.Sprintf("登录成功，欢迎 %s\n您的token: %s\n过期时间: %s", user, token, expireAt.Format(time.DateTime)))
 }
 
 func checkUser(username, password string) (string, bool) {
