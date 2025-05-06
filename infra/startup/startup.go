@@ -5,6 +5,7 @@ import (
 	"flag"
 	"io"
 	"os"
+	"time"
 
 	_ "github.com/joho/godotenv/autoload"
 	"github.com/sirupsen/logrus"
@@ -38,6 +39,15 @@ func Start() error {
 			vars.Config.LogLevel = "info"
 		}
 		vars.SecretKey = utils.SHA256([]byte(vars.Config.Secret))
+		if vars.Config.Jail.Enabled {
+			if vars.Config.Jail.MaxAttempts == 0 {
+				vars.Config.Jail.MaxAttempts = 5
+			}
+			if vars.Config.Jail.BanDuration == 0 {
+				vars.Config.Jail.BanDuration = 300
+			}
+			vars.AuthRateLimiter = utils.NewErrorSlidingWindowLimiter(vars.Config.Jail.MaxAttempts, time.Duration(vars.Config.Jail.BanDuration)*time.Second)
+		}
 	}
 	// init log
 	logLevel, err := logrus.ParseLevel(vars.Config.LogLevel)

@@ -1,8 +1,9 @@
 package vars
 
 var (
-	Config    ConfigFile
-	SecretKey []byte
+	Config          ConfigFile
+	SecretKey       []byte
+	AuthRateLimiter SlidingWindowLimiterIFace
 )
 
 const (

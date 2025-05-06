@@ -57,9 +57,18 @@ func loginAuthnHandler(c *fiber.Ctx) error {
 	if err != nil {
 		return err
 	}
-	logrus.Debugf("Access Remote IP %s", c.IP())
+	ipAddr := c.IP()
+	if vars.AuthRateLimiter != nil && vars.AuthRateLimiter.IsLimited(ipAddr) {
+		logrus.Warnf("Too many login attempts %s", ipAddr)
+		return c.Status(http.StatusTooManyRequests).SendString("Too many login attempts")
+	}
+	logrus.Debugf("Access Remote IP %s", ipAddr)
 	user, ok := checkUser(req.Username, req.Password)
 	if !ok { // 用户名密码错误
+		if vars.AuthRateLimiter != nil {
+			vars.AuthRateLimiter.RecordError(ipAddr)
+		}
+		logrus.Warnf("Invalid login attempt %s", ipAddr) // 记录警告日志方便后续fail2ban
 		u, uerr := url.Parse(vars.Config.Redirect)
 		if uerr != nil {
 			return uerr
