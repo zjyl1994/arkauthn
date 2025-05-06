@@ -57,6 +57,7 @@ func loginAuthnHandler(c *fiber.Ctx) error {
 	if err != nil {
 		return err
 	}
+	logrus.Debugf("Access Remote IP %s", c.IP())
 	user, ok := checkUser(req.Username, req.Password)
 	if !ok { // 用户名密码错误
 		u, uerr := url.Parse(vars.Config.Redirect)
