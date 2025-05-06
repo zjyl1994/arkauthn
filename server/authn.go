@@ -9,6 +9,7 @@ import (
 
 	"github.com/gofiber/fiber/v2"
 	"github.com/samber/lo"
+	"github.com/sirupsen/logrus"
 	"github.com/zjyl1994/arkauthn/infra/utils"
 	"github.com/zjyl1994/arkauthn/infra/vars"
 )
@@ -16,6 +17,7 @@ import (
 func forwardAuthHandler(c *fiber.Ctx) error {
 	forwardMethod := c.Get("X-Forwarded-Method")
 	forwardUri := fmt.Sprintf("%s://%s%s", c.Get("X-Forwarded-Proto"), c.Get("X-Forwarded-Host"), c.Get("X-Forwarded-Uri"))
+	logrus.Debugf("ForwardAuth with %s %s", forwardMethod, forwardUri)
 	unauthorized := func() error {
 		if strings.EqualFold(forwardMethod, "GET") {
 			u, err := url.Parse(vars.Config.Redirect)
@@ -40,11 +42,8 @@ func forwardAuthHandler(c *fiber.Ctx) error {
 		return unauthorized()
 	}
 	c.Set("Remote-User", username)
+	logrus.Debugf("ForwardAuth success with user:%s", username)
 	return c.SendStatus(http.StatusNoContent)
-}
-
-func loginPageHandler(c *fiber.Ctx) error {
-	return c.Render("login", fiber.Map{})
 }
 
 func loginAuthnHandler(c *fiber.Ctx) error {
