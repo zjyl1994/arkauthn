@@ -26,7 +26,7 @@ body {
     color: var(--text-color);
 }
 
-.profile-page {
+.profile-page, .login-page {
     width: 100%;
     max-width: 400px;
     padding: 20px;
@@ -73,6 +73,7 @@ body {
     box-shadow: 0 10px 25px rgba(0, 0, 0, 0.3);
     text-align: center;
     transition: all 0.3s ease;
+    animation: fadeIn 0.5s ease-out forwards;
 }
 
 .form:hover {
@@ -134,42 +135,6 @@ body {
     box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
 }
 
-.form .message {
-    margin: 20px 0 0;
-    color: #b3b3b3;
-    font-size: 14px;
-}
-
-.form .message a {
-    color: var(--primary-color);
-    text-decoration: none;
-    font-weight: 500;
-    transition: all 0.3s ease;
-}
-
-.form .message a:hover {
-    text-decoration: underline;
-}
-
-.remember-me {
-    display: flex;
-    align-items: center;
-    margin-bottom: 15px;
-    text-align: left;
-}
-
-.remember-me input[type="checkbox"] {
-    width: auto;
-    margin-right: 10px;
-    margin-bottom: 0;
-}
-
-.remember-me label {
-    font-size: 14px;
-    color: var(--text-color);
-    cursor: pointer;
-}
-
 .error-message {
     color: var(--error-color);
     margin-bottom: 15px;
@@ -194,23 +159,6 @@ body {
     to { opacity: 1; transform: translateY(0); }
 }
 
-.form {
-    animation: fadeIn 0.5s ease-out forwards;
-}
-
-.token-item {
-    word-break: break-all;
-    max-width: 400px;
-}
-
-.token-value {
-    display: inline-block;
-    max-width: 100%;
-    overflow-wrap: break-word;
-    word-wrap: break-word;
-    white-space: normal;
-}
-
 .logout-message {
     text-align: center;
     margin: 30px 0;
@@ -230,6 +178,7 @@ body {
     text-decoration: none;
     border-radius: 5px;
     transition: all 0.3s ease;
+    margin-bottom: 10px;
 }
 
 .login-btn:hover {
