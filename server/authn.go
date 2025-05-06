@@ -59,14 +59,14 @@ func loginAuthnHandler(c *fiber.Ctx) error {
 	}
 	user, ok := checkUser(req.Username, req.Password)
 	if !ok { // 用户名密码错误
-		u, err := url.Parse(vars.Config.Redirect)
-		if err != nil {
-			return err
+		u, uerr := url.Parse(vars.Config.Redirect)
+		if uerr != nil {
+			return uerr
 		}
 		q := u.Query()
-		q.Set("error", "true")
+		q.Set("e", "1")
 		if len(req.Redirect) > 0 {
-			q.Set("redirect", req.Redirect)
+			q.Set("r", req.Redirect)
 		}
 		u.RawQuery = q.Encode()
 		return c.Redirect(u.String())
