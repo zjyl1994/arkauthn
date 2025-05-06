@@ -47,6 +47,9 @@ func Start() error {
 			}
 			vars.AuthRateLimiter = utils.NewErrorSlidingWindowLimiter(vars.Config.Jail.MaxAttempts, time.Duration(vars.Config.Jail.BanDuration)*time.Second)
 		}
+		if vars.Config.TokenExpire == 0 {
+			vars.Config.TokenExpire = 3600
+		}
 	}
 	// init log
 	logLevel, err := logrus.ParseLevel(vars.Config.LogLevel)

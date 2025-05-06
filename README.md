@@ -1,1 +1,47 @@
-# arkauthn
+# ArkAuthn
+
+方舟认证，兼容 ForwardAuth 规范的认证服务。
+可以兼容 Caddy 等实现了ForwardAuth的Web服务，基于 JWT 进行认证。
+
+## 安装
+
+1. 复制 `setup/arkauthn.json` 到 `/etc/arkauthn.json`
+1. 复制 `setup/arkauthn.service` 到 `/etc/systemd/system/arkauthn.service`
+1. 运行 `systemctl daemon-reload`
+1. 运行 `systemctl enable arkauthn`
+1. 运行 `systemctl start arkauthn`
+
+## Caddy 配置
+```caddyfile
+auth.example.com {
+    reverse_proxy http://localhost:9008
+}
+protect.example.com {
+    forward_auth http://localhost:9008 {
+        uri /api/forward-auth
+    }
+    respond "Protected Content"   
+}
+```
+
+## JWT
+JWT Payload 格式为：
+```json
+{
+  "user": "zjyl1994",
+  "exp": 1746549524,
+  "nbf": 1746545924,
+  "iat": 1746545924
+}
+```
+HS256 签名，密钥使用 `arkauthn.json` 中对应用户的 Password 字段。
+
+根据需要可生成更长时间的 JWT 使用。
+
+支持的Token位置
+
+|位置|字段|
+|---|---|
+|Header|`X-Arkauthn: <token>`|
+|Cookie|`arkauthn=<token>`|
+|Query|`arkauthn=<token>`|

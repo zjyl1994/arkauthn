@@ -1,0 +1,17 @@
+{
+    "listen": "127.0.0.1:9008",
+    "redirect": "https://auth.example.com",
+    "log_file": "/var/log/arkauthn.log",
+    "token_expire": 3600,
+    "users": [
+        {
+            "username": "username",
+            "password": "password"
+        }
+    ],
+    "jail": {
+        "enabled": true,
+        "max_attempts": 5,
+        "ban_duration": 600
+    }
+}

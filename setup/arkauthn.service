@@ -1,0 +1,12 @@
+[Unit]
+Description=ArkAuthn
+After=network.target
+Wants=network-online.target
+
+[Service]
+Restart=always
+Type=simple
+ExecStart=/usr/local/bin/arkauthn --config=/etc/arkauthn.json
+
+[Install]
+WantedBy=multi-user.target
