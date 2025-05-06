@@ -47,8 +47,8 @@ func GenerateToken(username string, expireDuration time.Duration) (string, error
 }
 
 // ParseToken 解析JWT令牌
-// 返回用户名和错误信息
-func ParseToken(tokenString string) (string, error) {
+// 返回用户名、过期时间和错误信息
+func ParseToken(tokenString string) (string, time.Time, error) {
 	// 解析令牌
 	token, err := jwt.ParseWithClaims(tokenString, &Claims{}, func(token *jwt.Token) (interface{}, error) {
 		return []byte(vars.Config.Secret), nil
@@ -57,29 +57,35 @@ func ParseToken(tokenString string) (string, error) {
 	if err != nil {
 		// 检查是否是过期错误
 		if errors.Is(err, jwt.ErrTokenExpired) || errors.Is(err, jwt.ErrTokenNotValidYet) {
-			return "", ErrExpiredToken
+			return "", time.Time{}, ErrExpiredToken
 		}
-		return "", ErrInvalidToken
+		return "", time.Time{}, ErrInvalidToken
 	}
 
 	// 验证令牌
 	if !token.Valid {
-		return "", ErrInvalidToken
+		return "", time.Time{}, ErrInvalidToken
 	}
 
 	// 获取声明
 	claims, ok := token.Claims.(*Claims)
 	if !ok {
-		return "", ErrInvalidToken
+		return "", time.Time{}, ErrInvalidToken
 	}
 
-	return claims.Username, nil
+	// 获取过期时间
+	expiresAt, err := claims.GetExpirationTime()
+	if err != nil {
+		return "", time.Time{}, ErrInvalidToken
+	}
+
+	return claims.Username, expiresAt.Time, nil
 }
 
 // ValidateToken 验证令牌是否有效
 // 返回是否有效和错误信息
 func ValidateToken(tokenString string) (bool, error) {
-	_, err := ParseToken(tokenString)
+	_, _, err := ParseToken(tokenString)
 	if err != nil {
 		return false, err
 	}

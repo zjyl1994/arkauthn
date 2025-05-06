@@ -17,7 +17,7 @@ func forwardAuthHandler(c *fiber.Ctx) error {
 	forwardMethod := c.Get("X-Forwarded-Method")
 	forwardUri := fmt.Sprintf("%s://%s%s", c.Get("X-Forwarded-Proto"), c.Get("X-Forwarded-Host"), c.Get("X-Forwarded-Uri"))
 	logrus.Debugf("ForwardAuth with %s %s", forwardMethod, forwardUri)
-	username, ok := c.Locals(authUserNameKey).(string)
+	userinfo, ok := c.Locals(authUserKey).(authUserType)
 	if !ok {
 		if strings.EqualFold(forwardMethod, "GET") {
 			u, err := url.Parse(vars.Config.Redirect)
@@ -32,8 +32,8 @@ func forwardAuthHandler(c *fiber.Ctx) error {
 			return c.SendStatus(http.StatusUnauthorized)
 		}
 	}
-	c.Set("Remote-User", username)
-	logrus.Debugf("ForwardAuth success with user:%s", username)
+	c.Set("Remote-User", userinfo.Username)
+	logrus.Debugf("ForwardAuth success with user:%s", userinfo.Username)
 	return c.SendStatus(http.StatusNoContent)
 }
 
@@ -41,7 +41,6 @@ func loginAuthnHandler(c *fiber.Ctx) error {
 	var req struct {
 		Username string `json:"username" form:"username"`
 		Password string `json:"password" form:"password"`
-		Remember string `json:"remember" form:"remember"`
 		Redirect string `json:"redirect" form:"redirect"`
 	}
 	err := c.BodyParser(&req)
@@ -73,12 +72,7 @@ func loginAuthnHandler(c *fiber.Ctx) error {
 		return c.Redirect(u.String())
 	}
 	// 生成JWT令牌
-	var dur time.Duration
-	if len(req.Remember) > 0 {
-		dur = 30 * 24 * time.Hour
-	} else {
-		dur = time.Hour
-	}
+	var dur = time.Duration(vars.Config.TokenExpire) * time.Second
 	token, err := utils.GenerateToken(user, dur)
 	if err != nil {
 		return err
@@ -90,14 +84,12 @@ func loginAuthnHandler(c *fiber.Ctx) error {
 	}
 	expireAt := time.Now().Add(dur)
 	cookie := &fiber.Cookie{
-		Name:     "arkauthn",
-		Value:    token,
-		Expires:  expireAt,
-		HTTPOnly: true,
-		Domain:   "." + rootDomain,
-	}
-	if len(req.Remember) == 0 {
-		cookie.SessionOnly = true
+		Name:        "arkauthn",
+		Value:       token,
+		Expires:     expireAt,
+		HTTPOnly:    true,
+		Domain:      "." + rootDomain,
+		SessionOnly: true,
 	}
 	c.Cookie(cookie)
 	// 重定向
@@ -106,17 +98,19 @@ func loginAuthnHandler(c *fiber.Ctx) error {
 	}
 	return c.Render("index", fiber.Map{
 		"username": user,
-		"token":    token,
 		"expire":   expireAt.Format(time.DateTime),
 	})
 }
 
 func indexHandler(c *fiber.Ctx) error {
-	username, ok := c.Locals(authUserNameKey).(string)
+	userinfo, ok := c.Locals(authUserKey).(authUserType)
 	if !ok { // 没有登录
 		return c.Render("login", fiber.Map{})
 	}
-	return c.Render("index", fiber.Map{"username": username})
+	return c.Render("index", fiber.Map{
+		"username": userinfo.Username,
+		"expire":   userinfo.Expire.Format(time.DateTime),
+	})
 }
 
 func logoutHandler(c *fiber.Ctx) error {

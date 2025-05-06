@@ -11,11 +11,10 @@
 <body>
     <div class="profile-page">
         <div class="form">
-            <h1>ArkAuthn</h1>
+            <h1>&#9820; ArkAuthn</h1>
             <div class="profile-info">
                 <div class="info-item">当前登录用户: <span>{{.username}}</span></div>
-                {{if .token}} <div class="info-item token-item">Token: <span class="token-value">{{.token}}</span></div> {{end}}
-                {{if .expire}} <div class="info-item">过期时间: <span>{{.expire}}</span></div> {{end}}
+                <div class="info-item">会话有效期至: <span>{{.expire}}</span></div>
             </div>
             <a href="/logout" class="logout-btn">登出</a>
         </div>

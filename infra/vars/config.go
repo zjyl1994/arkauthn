@@ -1,13 +1,14 @@
 package vars
 
 type ConfigFile struct {
-	Listen   string     `json:"listen"`
-	Redirect string     `json:"redirect"`
-	Secret   string     `json:"secret"`
-	LogFile  string     `json:"logfile"`
-	LogLevel string     `json:"loglevel"`
-	Users    []UserItem `json:"users"`
-	Jail     JailConfig `json:"jail"`
+	Listen      string     `json:"listen"`
+	Redirect    string     `json:"redirect"`
+	Secret      string     `json:"secret"`
+	LogFile     string     `json:"log_file"`
+	LogLevel    string     `json:"log_level"`
+	Users       []UserItem `json:"users"`
+	Jail        JailConfig `json:"jail"`
+	TokenExpire int        `json:"token_expire"`
 }
 
 type UserItem struct {
