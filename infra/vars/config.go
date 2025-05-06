@@ -3,7 +3,6 @@ package vars
 type ConfigFile struct {
 	Listen      string     `json:"listen"`
 	Redirect    string     `json:"redirect"`
-	Secret      string     `json:"secret"`
 	LogFile     string     `json:"log_file"`
 	LogLevel    string     `json:"log_level"`
 	Users       []UserItem `json:"users"`

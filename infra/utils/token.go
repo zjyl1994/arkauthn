@@ -2,6 +2,7 @@ package utils
 
 import (
 	"errors"
+	"fmt"
 	"time"
 
 	"github.com/golang-jwt/jwt/v5"
@@ -16,7 +17,7 @@ var (
 
 // 自定义JWT声明结构
 type Claims struct {
-	Username string `json:"username"`
+	Username string `json:"user"`
 	jwt.RegisteredClaims
 }
 
@@ -43,7 +44,11 @@ func GenerateToken(username string, expireDuration time.Duration) (string, error
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
 
 	// 签名令牌
-	return token.SignedString([]byte(vars.Config.Secret))
+	secret, err := loadTokenSecretByUserName(username)
+	if err != nil {
+		return "", err
+	}
+	return token.SignedString(secret)
 }
 
 // ParseToken 解析JWT令牌
@@ -51,7 +56,11 @@ func GenerateToken(username string, expireDuration time.Duration) (string, error
 func ParseToken(tokenString string) (string, time.Time, error) {
 	// 解析令牌
 	token, err := jwt.ParseWithClaims(tokenString, &Claims{}, func(token *jwt.Token) (interface{}, error) {
-		return []byte(vars.Config.Secret), nil
+		claims, ok := token.Claims.(*Claims)
+		if !ok {
+			return "", ErrInvalidToken
+		}
+		return loadTokenSecretByUserName(claims.Username)
 	})
 
 	if err != nil {
@@ -90,4 +99,13 @@ func ValidateToken(tokenString string) (bool, error) {
 		return false, err
 	}
 	return true, nil
+}
+
+func loadTokenSecretByUserName(username string) ([]byte, error) {
+	for _, u := range vars.Config.Users {
+		if u.Username == username {
+			return []byte(u.Password), nil
+		}
+	}
+	return nil, fmt.Errorf("用户 %s 不存在", username)
 }
