@@ -8,7 +8,6 @@ import (
 	"time"
 
 	"github.com/gofiber/fiber/v2"
-	"github.com/samber/lo"
 	"github.com/sirupsen/logrus"
 	"github.com/zjyl1994/arkauthn/infra/utils"
 	"github.com/zjyl1994/arkauthn/infra/vars"
@@ -18,7 +17,8 @@ func forwardAuthHandler(c *fiber.Ctx) error {
 	forwardMethod := c.Get("X-Forwarded-Method")
 	forwardUri := fmt.Sprintf("%s://%s%s", c.Get("X-Forwarded-Proto"), c.Get("X-Forwarded-Host"), c.Get("X-Forwarded-Uri"))
 	logrus.Debugf("ForwardAuth with %s %s", forwardMethod, forwardUri)
-	unauthorized := func() error {
+	username, ok := c.Locals(authUserNameKey).(string)
+	if !ok {
 		if strings.EqualFold(forwardMethod, "GET") {
 			u, err := url.Parse(vars.Config.Redirect)
 			if err != nil {
@@ -31,15 +31,6 @@ func forwardAuthHandler(c *fiber.Ctx) error {
 		} else {
 			return c.SendStatus(http.StatusUnauthorized)
 		}
-	}
-	token, ok := lo.Coalesce(c.Query("arkauthn"), c.Cookies("arkauthn"), c.Get("X-Arkauthn"))
-	if !ok {
-		return unauthorized()
-	}
-
-	username, err := utils.ParseToken(token)
-	if err != nil || username == "" {
-		return unauthorized()
 	}
 	c.Set("Remote-User", username)
 	logrus.Debugf("ForwardAuth success with user:%s", username)
@@ -114,6 +105,20 @@ func loginAuthnHandler(c *fiber.Ctx) error {
 		return c.Redirect(req.Redirect)
 	}
 	return c.SendString(fmt.Sprintf("登录成功，欢迎 %s\n您的token: %s\n过期时间: %s", user, token, expireAt.Format(time.DateTime)))
+}
+
+func indexHandler(c *fiber.Ctx) error {
+	username, ok := c.Locals(authUserNameKey).(string)
+	if !ok { // 没有登录
+		return publicFileHandler(c)
+	}
+
+	return c.SendString(fmt.Sprintf("当前登录用户 %s", username))
+}
+
+func logoutHandler(c *fiber.Ctx) error {
+	c.ClearCookie("arkauthn")
+	return c.SendString("已退出登录")
 }
 
 func checkUser(username, password string) (string, bool) {

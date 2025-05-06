@@ -43,7 +43,7 @@ func GenerateToken(username string, expireDuration time.Duration) (string, error
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
 
 	// 签名令牌
-	return token.SignedString(vars.SecretKey)
+	return token.SignedString([]byte(vars.Config.Secret))
 }
 
 // ParseToken 解析JWT令牌
@@ -51,7 +51,7 @@ func GenerateToken(username string, expireDuration time.Duration) (string, error
 func ParseToken(tokenString string) (string, error) {
 	// 解析令牌
 	token, err := jwt.ParseWithClaims(tokenString, &Claims{}, func(token *jwt.Token) (interface{}, error) {
-		return vars.SecretKey, nil
+		return []byte(vars.Config.Secret), nil
 	})
 
 	if err != nil {

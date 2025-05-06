@@ -2,7 +2,6 @@ package vars
 
 var (
 	Config          ConfigFile
-	SecretKey       []byte
 	AuthRateLimiter SlidingWindowLimiterIFace
 )
 

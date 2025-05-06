@@ -38,7 +38,6 @@ func Start() error {
 		if vars.Config.LogLevel == "" {
 			vars.Config.LogLevel = "info"
 		}
-		vars.SecretKey = utils.SHA256([]byte(vars.Config.Secret))
 		if vars.Config.Jail.Enabled {
 			if vars.Config.Jail.MaxAttempts == 0 {
 				vars.Config.Jail.MaxAttempts = 5
