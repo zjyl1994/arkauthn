@@ -104,21 +104,24 @@ func loginAuthnHandler(c *fiber.Ctx) error {
 	if len(req.Redirect) > 0 {
 		return c.Redirect(req.Redirect)
 	}
-	return c.SendString(fmt.Sprintf("登录成功，欢迎 %s\n您的token: %s\n过期时间: %s", user, token, expireAt.Format(time.DateTime)))
+	return c.Render("index", fiber.Map{
+		"username": user,
+		"token":    token,
+		"expire":   expireAt.Format(time.DateTime),
+	})
 }
 
 func indexHandler(c *fiber.Ctx) error {
 	username, ok := c.Locals(authUserNameKey).(string)
 	if !ok { // 没有登录
-		return publicFileHandler(c)
+		return c.Render("login", fiber.Map{})
 	}
-
-	return c.SendString(fmt.Sprintf("当前登录用户 %s", username))
+	return c.Render("index", fiber.Map{"username": username})
 }
 
 func logoutHandler(c *fiber.Ctx) error {
 	c.ClearCookie("arkauthn")
-	return c.SendString("已退出登录")
+	return c.Render("logout", fiber.Map{})
 }
 
 func checkUser(username, password string) (string, bool) {

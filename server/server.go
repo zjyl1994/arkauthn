@@ -1,31 +1,30 @@
 package server
 
 import (
-	"net/http"
-
 	"github.com/gofiber/fiber/v2"
 	"github.com/gofiber/fiber/v2/middleware/filesystem"
+	"github.com/gofiber/template/html/v2"
 	"github.com/zjyl1994/arkauthn/web"
 )
 
-var publicFileHandler = filesystem.New(filesystem.Config{
-	Root:       http.FS(web.PublicFiles),
-	PathPrefix: "public",
-	Index:      "index.html",
-})
-
 func Run(listen string) error {
+	embedAssets, err := web.GetHttpAssets()
+	if err != nil {
+		return err
+	}
+
+	engine := html.NewFileSystem(embedAssets, ".html")
 	app := fiber.New(fiber.Config{
 		DisableStartupMessage: true,
+		Views:                 engine,
 	})
 
+	app.Use(authTokenMiddleware)
+	app.Get("/", indexHandler)
 	app.Post("/", loginAuthnHandler)
 	app.Get("/logout", logoutHandler)
-
-	app.Use(authTokenMiddleware)
 	app.Get("/api/forward-auth", forwardAuthHandler)
-	app.Get("/", indexHandler)
 
-	app.Use(publicFileHandler)
+	app.Use(filesystem.New(filesystem.Config{Root: embedAssets}))
 	return app.Listen(listen)
 }
