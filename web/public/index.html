@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="zh">
 
 <head>
     <meta charset="UTF-8">
@@ -14,11 +14,23 @@
             <h1>&#9820; ArkAuthn</h1>
             <div class="profile-info">
                 <div class="info-item">当前登录用户: <span>{{.username}}</span></div>
-                <div class="info-item">会话有效期至: <span>{{.expire}}</span></div>
+                <div class="info-item">会话有效期至: <span id="expire-time">{{.expire}}</span></div>
             </div>
             <a href="/logout" class="logout-btn">登出</a>
         </div>
     </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const expireElement = document.getElementById('expire-time');
+            const timestamp = parseInt(expireElement.textContent);
+            
+            if (!isNaN(timestamp)) {
+                const date = new Date(timestamp * 1000);
+                expireElement.textContent = date.toLocaleString();
+            }
+        });
+    </script>
 </body>
 
 </html>

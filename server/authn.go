@@ -98,7 +98,7 @@ func loginAuthnHandler(c *fiber.Ctx) error {
 	}
 	return c.Render("index", fiber.Map{
 		"username": user,
-		"expire":   expireAt.Format(time.DateTime),
+		"expire":   expireAt.Unix(),
 	})
 }
 
@@ -109,7 +109,7 @@ func indexHandler(c *fiber.Ctx) error {
 	}
 	return c.Render("index", fiber.Map{
 		"username": userinfo.Username,
-		"expire":   userinfo.Expire.Format(time.DateTime),
+		"expire":   userinfo.Expire.Unix(),
 	})
 }
 
