@@ -1,36 +1,22 @@
-<!DOCTYPE html>
-<html lang="zh">
-
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>ArkAuthn</title>
-    <link rel="stylesheet" href="styles.css">
-</head>
-
-<body>
-    <div class="profile-page">
-        <div class="form">
-            <h1>&#9820; ArkAuthn</h1>
-            <div class="profile-info">
-                <div class="info-item">当前登录用户: <span>{{.username}}</span></div>
-                <div class="info-item">会话有效期至: <span id="expire-time">{{.expire}}</span></div>
-            </div>
-            <a href="/logout" class="logout-btn">登出</a>
+<div class="profile-page">
+    <div class="form">
+        <h1>&#9820; ARKAUTHN</h1>
+        <div class="profile-info">
+            <div class="info-item">当前登录用户: <span>{{.username}}</span></div>
+            <div class="info-item">会话有效期至: <span id="expire-time">{{.expire}}</span></div>
         </div>
+        <a href="/logout" class="logout-btn">登出</a>
     </div>
+</div>
 
-    <script>
-        document.addEventListener('DOMContentLoaded', function() {
-            const expireElement = document.getElementById('expire-time');
-            const timestamp = parseInt(expireElement.textContent);
-            
-            if (!isNaN(timestamp)) {
-                const date = new Date(timestamp * 1000);
-                expireElement.textContent = date.toLocaleString();
-            }
-        });
-    </script>
-</body>
+<script>
+    document.addEventListener('DOMContentLoaded', function () {
+        const expireElement = document.getElementById('expire-time');
+        const timestamp = parseInt(expireElement.textContent);
 
-</html>
+        if (!isNaN(timestamp)) {
+            const date = new Date(timestamp * 1000);
+            expireElement.textContent = date.toLocaleString();
+        }
+    });
+</script>

@@ -1,39 +1,25 @@
-<!DOCTYPE html>
-<html lang="zh">
-
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>ArkAuthn</title>
-    <link rel="stylesheet" href="styles.css">
-</head>
-
-<body>
-    <div class="login-page">
-        <div class="form">
-            <h1>&#9820; ArkAuthn</h1>
-            <div class="error-message" id="error-message">用户名或密码错误，请重试。</div>
-            <form class="login-form" method="post">
-                <input type="text" placeholder="用户名" name="username" required />
-                <input type="password" placeholder="密码" name="password" required />
-                <input type="hidden" id="redirect" name="redirect" value="" />
-                <button type="submit">登录</button>
-            </form>
-        </div>
+<div class="login-page">
+    <div class="form">
+        <h1>&#9820; ARKAUTHN</h1>
+        <div class="error-message" id="error-message">用户名或密码错误，请重试。</div>
+        <form class="login-form" method="post">
+            <input type="text" placeholder="用户名" name="username" required />
+            <input type="password" placeholder="密码" name="password" required />
+            <input type="hidden" id="redirect" name="redirect" value="" />
+            <button type="submit">登录</button>
+        </form>
     </div>
+</div>
 
-    <script>
-        window.onload = function() {
-            const urlParams = new URLSearchParams(window.location.search);
-            if (urlParams.has('e')) {
-                document.getElementById('error-message').style.display = 'block';
-            }
-            
-            if (urlParams.has('r')) {
-                document.getElementById('redirect').value = urlParams.get('r');
-            }
+<script>
+    window.onload = function () {
+        const urlParams = new URLSearchParams(window.location.search);
+        if (urlParams.has('e')) {
+            document.getElementById('error-message').style.display = 'block';
         }
-    </script>
-</body>
 
-</html>
+        if (urlParams.has('r')) {
+            document.getElementById('redirect').value = urlParams.get('r');
+        }
+    }
+</script>

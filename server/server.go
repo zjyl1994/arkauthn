@@ -17,6 +17,7 @@ func Run(listen string) error {
 	app := fiber.New(fiber.Config{
 		DisableStartupMessage: true,
 		Views:                 engine,
+		ViewsLayout:           "layout",
 	})
 
 	app.Use(authTokenMiddleware)
