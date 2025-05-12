@@ -27,7 +27,7 @@ func forwardAuthHandler(c *fiber.Ctx) error {
 			query := u.Query()
 			query.Set("r", forwardUri)
 			u.RawQuery = query.Encode()
-			return c.Redirect(u.String())
+			return c.Redirect(u.String(), fiber.StatusSeeOther)
 		} else {
 			return c.SendStatus(http.StatusUnauthorized)
 		}
@@ -94,7 +94,7 @@ func loginAuthnHandler(c *fiber.Ctx) error {
 	c.Cookie(cookie)
 	// 重定向
 	if len(req.Redirect) > 0 {
-		return c.Redirect(req.Redirect)
+		return c.Redirect(req.Redirect, fiber.StatusSeeOther)
 	}
 	return c.Render("index", fiber.Map{
 		"username": user,
