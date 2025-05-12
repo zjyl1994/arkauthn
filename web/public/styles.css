@@ -19,6 +19,8 @@
 body {
     font-family: 'Roboto', sans-serif;
     background: var(--background-color);
+    background-image: url('bg-pattern.png');
+    background-repeat: repeat;
     display: flex;
     justify-content: center;
     align-items: center;
