@@ -106,7 +106,48 @@ func loginAuthnHandler(c *fiber.Ctx) error {
 	c.Cookie(cookie)
 	// 重定向
 	if len(req.Redirect) > 0 {
-		return c.Redirect(req.Redirect, fiber.StatusSeeOther)
+		// 检查重定向URL是否安全 (Open Redirect Protection)
+		safeRedirect := false
+		if strings.HasPrefix(req.Redirect, "/") && !strings.HasPrefix(req.Redirect, "//") {
+			safeRedirect = true
+		} else {
+			// 尝试解析 URL 获取 Hostname
+			var hostname string
+			u, err := url.Parse(req.Redirect)
+			if err == nil {
+				hostname = u.Hostname()
+			}
+			// 处理无协议头的 URL (如 //example.com)
+			if hostname == "" && strings.HasPrefix(req.Redirect, "//") {
+				if u, err := url.Parse("https:" + req.Redirect); err == nil {
+					hostname = u.Hostname()
+				}
+			}
+
+			if hostname != "" {
+				// 1. 检查是否与认证服务属于同一根域名 (保持原有逻辑)
+				redirectRoot, err := utils.ExtractRootDomain(req.Redirect)
+				if err == nil && redirectRoot == rootDomain {
+					safeRedirect = true
+				}
+
+				// 2. 检查 TrustedDomains (支持子域名匹配)
+				if !safeRedirect {
+					for _, domain := range vars.Config.TrustedDomains {
+						// 允许完全相等 或 作为子域名 (e.g. "a.example.com" 匹配 "example.com")
+						if hostname == domain || strings.HasSuffix(hostname, "."+domain) {
+							safeRedirect = true
+							break
+						}
+					}
+				}
+			}
+		}
+
+		if safeRedirect {
+			return c.Redirect(req.Redirect, fiber.StatusSeeOther)
+		}
+		logrus.Warnf("Invalid redirect attempt to %s", req.Redirect)
 	}
 	return c.Render("index", fiber.Map{
 		"username": user,
