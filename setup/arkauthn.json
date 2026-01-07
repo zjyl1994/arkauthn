@@ -3,6 +3,7 @@
     "redirect": "https://auth.example.com",
     "log_file": "/var/log/arkauthn.log",
     "token_expire": 3600,
+    "secret": "2eca7189-856e-4013-bd79-5d2f30a5dfb0",
     "users": [
         {
             "username": "username",

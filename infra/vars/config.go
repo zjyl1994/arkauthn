@@ -5,6 +5,7 @@ type ConfigFile struct {
 	Redirect    string     `json:"redirect"`
 	LogFile     string     `json:"log_file"`
 	LogLevel    string     `json:"log_level"`
+	Secret      string     `json:"secret"`
 	Users       []UserItem `json:"users"`
 	Jail        JailConfig `json:"jail"`
 	TokenExpire int        `json:"token_expire"`

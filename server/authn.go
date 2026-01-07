@@ -33,6 +33,7 @@ func forwardAuthHandler(c *fiber.Ctx) error {
 		}
 	}
 	c.Set("Remote-User", userinfo.Username)
+	c.Set("X-Forwarded-User", userinfo.Username)
 	logrus.Debugf("ForwardAuth success with user:%s", userinfo.Username)
 	return c.SendStatus(http.StatusNoContent)
 }

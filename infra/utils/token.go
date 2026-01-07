@@ -104,7 +104,10 @@ func ValidateToken(tokenString string) (bool, error) {
 func loadTokenSecretByUserName(username string) ([]byte, error) {
 	for _, u := range vars.Config.Users {
 		if u.Username == username {
-			return []byte(u.Password), nil
+			key := make([]byte, 0, len(vars.Config.Secret)+len(u.Password))
+			key = append(key, vars.Config.Secret...)
+			key = append(key, u.Password...)
+			return key, nil
 		}
 	}
 	return nil, fmt.Errorf("用户 %s 不存在", username)
