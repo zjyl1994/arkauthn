@@ -15,6 +15,12 @@ import (
 	"golang.org/x/crypto/bcrypt"
 )
 
+var dummyBcryptHash []byte
+
+func init() {
+	dummyBcryptHash, _ = bcrypt.GenerateFromPassword([]byte("dummy_password_for_timing_protection"), bcrypt.DefaultCost)
+}
+
 func forwardAuthHandler(c *fiber.Ctx) error {
 	forwardMethod := c.Get("X-Forwarded-Method")
 	forwardUri := fmt.Sprintf("%s://%s%s", c.Get("X-Forwarded-Proto"), c.Get("X-Forwarded-Host"), c.Get("X-Forwarded-Uri"))
@@ -172,16 +178,27 @@ func logoutHandler(c *fiber.Ctx) error {
 }
 
 func checkUser(username, password string) (string, bool) {
+	var foundUser *vars.UserItem
 	for _, u := range vars.Config.Users {
 		if u.Username == username {
-			if strings.HasPrefix(u.Password, "$2a$") || strings.HasPrefix(u.Password, "$2b$") || strings.HasPrefix(u.Password, "$2y$") {
-				if bcrypt.CompareHashAndPassword([]byte(u.Password), []byte(password)) == nil {
-					return u.Username, true
-				}
-			} else if subtle.ConstantTimeCompare([]byte(password), []byte(u.Password)) > 0 {
-				return u.Username, true
-			}
+			// Create a copy to avoid referencing loop variable
+			user := u
+			foundUser = &user
+			break
 		}
+	}
+
+	if foundUser != nil {
+		if strings.HasPrefix(foundUser.Password, "$2a$") || strings.HasPrefix(foundUser.Password, "$2b$") || strings.HasPrefix(foundUser.Password, "$2y$") {
+			if bcrypt.CompareHashAndPassword([]byte(foundUser.Password), []byte(password)) == nil {
+				return foundUser.Username, true
+			}
+		} else if subtle.ConstantTimeCompare([]byte(password), []byte(foundUser.Password)) > 0 {
+			return foundUser.Username, true
+		}
+	} else {
+		// Timing attack protection: simulate a bcrypt comparison
+		bcrypt.CompareHashAndPassword(dummyBcryptHash, []byte(password))
 	}
 	return "", false
 }

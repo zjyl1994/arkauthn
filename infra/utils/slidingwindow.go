@@ -33,9 +33,18 @@ func (l *ErrorSlidingWindowLimiter) IsLimited(ip string) bool {
 		errors := errorList.([]time.Time)
 		// 清除过期的错误记录
 		cutoff := now.Add(-l.window)
-		for len(errors) > 0 && errors[0].Before(cutoff) {
-			errors = errors[1:]
+		// 找到第一个未过期的记录索引
+		firstValid := 0
+		for firstValid < len(errors) && errors[firstValid].Before(cutoff) {
+			firstValid++
 		}
+		
+		// 如果有过期记录，切片并更新回Map
+		if firstValid > 0 {
+			errors = errors[firstValid:]
+			l.errors.Store(ip, errors)
+		}
+
 		// 如果当前窗口内的错误数量达到最大值，则返回true表示被限流
 		return len(errors) >= l.maxErrors
 	}
