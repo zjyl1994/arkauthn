@@ -53,7 +53,7 @@ func loginAuthnHandler(c *fiber.Ctx) error {
 		return err
 	}
 	if req.CapToken == "" || !vars.CapInstance.ValidateToken(req.CapToken, false) {
-		return c.SendStatus(fiber.StatusUnauthorized)
+		return c.Status(fiber.StatusUnauthorized).SendString("Invalid cap token")
 	}
 	ipAddr := c.IP()
 	if vars.AuthRateLimiter != nil && vars.AuthRateLimiter.IsLimited(ipAddr) {
