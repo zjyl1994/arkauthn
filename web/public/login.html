@@ -11,7 +11,11 @@
     </div>
 </div>
 
-<script>
+<script type="module">
+    import Cap from '/vendor/capjs/cap.js'
+
+    window.CAP_CUSTOM_WASM_URL = '/vendor/capjs/cap_wasm.min.js';
+
     window.onload = function () {
         const urlParams = new URLSearchParams(window.location.search);
         if (urlParams.has('e')) {
@@ -21,5 +25,38 @@
         if (urlParams.has('r')) {
             document.getElementById('redirect').value = urlParams.get('r');
         }
+
+        const form = document.querySelector('.login-form');
+        const submitBtn = form.querySelector('button[type="submit"]');
+
+        form.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            
+            if (submitBtn.disabled) return;
+            
+            const originalText = submitBtn.innerText;
+            submitBtn.disabled = true;
+            submitBtn.innerText = '安全验证中...';
+
+            try {
+                const cap = new Cap({
+                    apiEndpoint: '/api/cap/',
+                });
+                const solution = await cap.solve();
+                
+                const input = document.createElement('input');
+                input.type = 'hidden';
+                input.name = 'cap_token';
+                input.value = solution.token;
+                form.appendChild(input);
+                
+                form.submit();
+            } catch (err) {
+                console.error(err);
+                alert('验证失败，请重试');
+                submitBtn.disabled = false;
+                submitBtn.innerText = originalText;
+            }
+        });
     }
 </script>
