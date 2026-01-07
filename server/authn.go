@@ -99,6 +99,8 @@ func loginAuthnHandler(c *fiber.Ctx) error {
 		Value:    token,
 		Expires:  expireAt,
 		HTTPOnly: true,
+		Secure:   true,
+		SameSite: "Lax",
 		Domain:   "." + rootDomain,
 	}
 	c.Cookie(cookie)

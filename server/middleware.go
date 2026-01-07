@@ -16,7 +16,7 @@ type authUserType struct {
 var authUserKey authUserType
 
 func authTokenMiddleware(c *fiber.Ctx) error {
-	token, ok := lo.Coalesce(c.Query("arkauthn"), c.Cookies("arkauthn"), c.Get("X-Arkauthn"))
+	token, ok := lo.Coalesce(c.Cookies("arkauthn"), c.Get("X-Arkauthn"))
 	if ok {
 		username, expire, err := utils.ParseToken(token)
 		if err == nil {
