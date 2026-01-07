@@ -11,6 +11,7 @@ import (
 	"github.com/sirupsen/logrus"
 	"github.com/zjyl1994/arkauthn/infra/utils"
 	"github.com/zjyl1994/arkauthn/infra/vars"
+	"golang.org/x/crypto/bcrypt"
 )
 
 func forwardAuthHandler(c *fiber.Ctx) error {
@@ -121,8 +122,14 @@ func logoutHandler(c *fiber.Ctx) error {
 
 func checkUser(username, password string) (string, bool) {
 	for _, u := range vars.Config.Users {
-		if u.Username == username && u.Password == password {
-			return u.Username, true
+		if u.Username == username {
+			if strings.HasPrefix(u.Password, "$2a$") || strings.HasPrefix(u.Password, "$2b$") || strings.HasPrefix(u.Password, "$2y$") {
+				if bcrypt.CompareHashAndPassword([]byte(u.Password), []byte(password)) == nil {
+					return u.Username, true
+				}
+			} else if u.Password == password {
+				return u.Username, true
+			}
 		}
 	}
 	return "", false
