@@ -12,9 +12,12 @@
 </div>
 
 <script type="module">
-    import Cap from '/vendor/capjs/cap.js'
+    // 配置必须在加载 CapJS 之前设置，否则会回退到 CDN
+    // 使用绝对路径以避免 Web Worker 中的解析问题
+    window.CAP_CUSTOM_WASM_URL = new URL('/vendor/capjs/cap_wasm.min.js', window.location.href).href;
 
-    window.CAP_CUSTOM_WASM_URL = '/vendor/capjs/cap_wasm.min.js';
+    // 使用动态导入确保配置已生效
+    const { default: Cap } = await import('/vendor/capjs/cap.js');
 
     window.onload = function () {
         const urlParams = new URLSearchParams(window.location.search);

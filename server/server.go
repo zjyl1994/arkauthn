@@ -1,6 +1,9 @@
 package server
 
 import (
+	"mime"
+	"time"
+
 	"github.com/gofiber/fiber/v2"
 	"github.com/gofiber/fiber/v2/middleware/filesystem"
 	"github.com/gofiber/template/html/v2"
@@ -8,6 +11,8 @@ import (
 )
 
 func Run(listen string) error {
+	mime.AddExtensionType(".wasm", "application/wasm")
+
 	embedAssets, err := web.GetHttpAssets()
 	if err != nil {
 		return err
@@ -28,6 +33,9 @@ func Run(listen string) error {
 	app.Post("/api/cap/challenge", createChallengeHandler)
 	app.Post("/api/cap/redeem", redeemChallengeHandler)
 
-	app.Use(filesystem.New(filesystem.Config{Root: embedAssets}))
+	app.Use(filesystem.New(filesystem.Config{
+		Root:   embedAssets,
+		MaxAge: int(time.Hour.Seconds()),
+	}))
 	return app.Listen(listen)
 }
