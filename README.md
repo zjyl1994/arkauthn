@@ -34,14 +34,10 @@ JWT Payload 格式为：
   "iat": 1746545924
 }
 ```
-HS256 签名，密钥使用 `arkauthn.json` 中对应用户的 Password 字段。
 
-根据需要可生成更长时间的 JWT 使用。
-
-支持的Token位置
+## 支持的Token位置
 
 |位置|字段|
 |---|---|
 |Header|`X-Arkauthn: <token>`|
 |Cookie|`arkauthn=<token>`|
-|Query|`arkauthn=<token>`|
