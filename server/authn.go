@@ -132,7 +132,7 @@ func checkUser(username, password string) (string, bool) {
 				if bcrypt.CompareHashAndPassword([]byte(u.Password), []byte(password)) == nil {
 					return u.Username, true
 				}
-			} else if subtle.ConstantTimeCompare([]byte(password), []byte(u.Password)) == 0 {
+			} else if subtle.ConstantTimeCompare([]byte(password), []byte(u.Password)) > 0 {
 				return u.Username, true
 			}
 		}

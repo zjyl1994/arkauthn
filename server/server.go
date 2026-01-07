@@ -35,7 +35,7 @@ func Run(listen string) error {
 
 	app.Use(filesystem.New(filesystem.Config{
 		Root:   embedAssets,
-		MaxAge: int(time.Hour.Seconds()),
+		MaxAge: int((7 * 24 * time.Hour).Seconds()),
 	}))
 	return app.Listen(listen)
 }
