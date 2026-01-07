@@ -46,6 +46,7 @@ func loginAuthnHandler(c *fiber.Ctx) error {
 		Password string `json:"password" form:"password"`
 		Redirect string `json:"redirect" form:"redirect"`
 		CapToken string `json:"cap_token" form:"cap_token"`
+		Duration int64  `json:"duration" form:"duration"`
 	}
 	err := c.BodyParser(&req)
 	if err != nil {
@@ -80,6 +81,9 @@ func loginAuthnHandler(c *fiber.Ctx) error {
 	}
 	// 生成JWT令牌
 	var dur = time.Duration(vars.Config.TokenExpire) * time.Second
+	if req.Duration >= 3600 && req.Duration <= 31536000 {
+		dur = time.Duration(req.Duration) * time.Second
+	}
 	token, err := utils.GenerateToken(user, dur)
 	if err != nil {
 		return err

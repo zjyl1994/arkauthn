@@ -5,6 +5,27 @@
         <form class="login-form" method="post">
             <input type="text" placeholder="用户名" name="username" required />
             <input type="password" placeholder="密码" name="password" required />
+            
+            <div class="duration-selector">
+                <label>
+                    <input type="radio" name="duration-option" value="3600" checked>
+                    <span>1小时</span>
+                </label>
+                <label>
+                    <input type="radio" name="duration-option" value="86400">
+                    <span>1天</span>
+                </label>
+                <label>
+                    <input type="radio" name="duration-option" value="2592000">
+                    <span>30天</span>
+                </label>
+                <label>
+                    <input type="radio" name="duration-option" value="31536000">
+                    <span>1年</span>
+                </label>
+            </div>
+            <input type="hidden" name="duration" id="duration-input" value="3600" />
+
             <input type="hidden" id="redirect" name="redirect" value="" />
             <button type="submit">登录</button>
         </form>
@@ -38,6 +59,18 @@
         if (savedUsername) {
             usernameInput.value = savedUsername;
         }
+
+        // Duration selector logic
+        const durationInputs = document.querySelectorAll('input[name="duration-option"]');
+        const durationInput = document.getElementById('duration-input');
+        
+        durationInputs.forEach(input => {
+            input.addEventListener('change', (e) => {
+                if (e.target.checked) {
+                    durationInput.value = e.target.value;
+                }
+            });
+        });
 
         form.addEventListener('submit', async (e) => {
             e.preventDefault();
