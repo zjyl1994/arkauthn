@@ -95,12 +95,11 @@ func loginAuthnHandler(c *fiber.Ctx) error {
 	}
 	expireAt := time.Now().Add(dur)
 	cookie := &fiber.Cookie{
-		Name:        "arkauthn",
-		Value:       token,
-		Expires:     expireAt,
-		HTTPOnly:    true,
-		Domain:      "." + rootDomain,
-		SessionOnly: true,
+		Name:     "arkauthn",
+		Value:    token,
+		Expires:  expireAt,
+		HTTPOnly: true,
+		Domain:   "." + rootDomain,
 	}
 	c.Cookie(cookie)
 	// 重定向
