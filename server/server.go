@@ -25,6 +25,8 @@ func Run(listen string) error {
 	app.Post("/", loginAuthnHandler)
 	app.Get("/logout", logoutHandler)
 	app.Get("/api/forward-auth", forwardAuthHandler)
+	app.Post("/api/cap/challenge", createChallengeHandler)
+	app.Post("/api/cap/redeem", redeemChallengeHandler)
 
 	app.Use(filesystem.New(filesystem.Config{Root: embedAssets}))
 	return app.Listen(listen)

@@ -14,6 +14,7 @@ type ConfigFile struct {
 type UserItem struct {
 	Username string `json:"username"`
 	Password string `json:"password"`
+	Nonce    string `json:"nonce"`
 }
 
 type JailConfig struct {

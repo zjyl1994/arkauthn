@@ -1,6 +1,7 @@
 package server
 
 import (
+	"crypto/subtle"
 	"fmt"
 	"net/http"
 	"net/url"
@@ -44,10 +45,14 @@ func loginAuthnHandler(c *fiber.Ctx) error {
 		Username string `json:"username" form:"username"`
 		Password string `json:"password" form:"password"`
 		Redirect string `json:"redirect" form:"redirect"`
+		CapToken string `json:"cap_token" form:"cap_token"`
 	}
 	err := c.BodyParser(&req)
 	if err != nil {
 		return err
+	}
+	if req.CapToken == "" || !vars.CapInstance.ValidateToken(req.CapToken, false) {
+		return c.SendStatus(fiber.StatusUnauthorized)
 	}
 	ipAddr := c.IP()
 	if vars.AuthRateLimiter != nil && vars.AuthRateLimiter.IsLimited(ipAddr) {
@@ -127,7 +132,7 @@ func checkUser(username, password string) (string, bool) {
 				if bcrypt.CompareHashAndPassword([]byte(u.Password), []byte(password)) == nil {
 					return u.Username, true
 				}
-			} else if u.Password == password {
+			} else if subtle.ConstantTimeCompare([]byte(password), []byte(u.Password)) == 0 {
 				return u.Username, true
 			}
 		}

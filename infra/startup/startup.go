@@ -12,6 +12,7 @@ import (
 	"github.com/zjyl1994/arkauthn/infra/utils"
 	"github.com/zjyl1994/arkauthn/infra/vars"
 	"github.com/zjyl1994/arkauthn/server"
+	"github.com/zjyl1994/cap-go"
 	"gopkg.in/natefinch/lumberjack.v2"
 )
 
@@ -67,6 +68,7 @@ func Start() error {
 		}
 		logrus.SetOutput(io.MultiWriter(os.Stdout, fileLogger))
 	}
+	vars.CapInstance = cap.NewCap(utils.NewFreeCacheStorage(50 * 1024))
 	// start server
 	logrus.Infoln("ArkAuthn running in", vars.Config.Listen)
 	return server.Run(vars.Config.Listen)

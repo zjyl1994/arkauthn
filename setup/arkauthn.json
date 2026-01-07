@@ -7,7 +7,8 @@
     "users": [
         {
             "username": "username",
-            "password": "password"
+            "password": "password",
+            "nonce": "69295e92-b092-4e2d-a90a-5b969758c6df"
         }
     ],
     "jail": {
