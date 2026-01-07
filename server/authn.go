@@ -106,7 +106,7 @@ func loginAuthnHandler(c *fiber.Ctx) error {
 		Value:    token,
 		Expires:  expireAt,
 		HTTPOnly: true,
-		Secure:   true,
+		Secure:   strings.HasPrefix(vars.Config.Redirect, "https") || c.Protocol() == "https",
 		SameSite: "Lax",
 		Domain:   "." + rootDomain,
 	}
