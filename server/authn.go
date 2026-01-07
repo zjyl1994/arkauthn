@@ -30,7 +30,8 @@ func forwardAuthHandler(c *fiber.Ctx) error {
 		if strings.EqualFold(forwardMethod, "GET") {
 			u, err := url.Parse(vars.Config.Redirect)
 			if err != nil {
-				return c.Status(http.StatusInternalServerError).SendString(err.Error())
+				logrus.Errorf("Invalid redirect config: %v", err)
+				return c.Status(http.StatusInternalServerError).SendString("Internal Server Error")
 			}
 			query := u.Query()
 			query.Set("r", forwardUri)
