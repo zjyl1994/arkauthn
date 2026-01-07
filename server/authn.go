@@ -174,7 +174,21 @@ func indexHandler(c *fiber.Ctx) error {
 }
 
 func logoutHandler(c *fiber.Ctx) error {
-	c.ClearCookie("arkauthn")
+	rootDomain, err := utils.ExtractRootDomain(vars.Config.Redirect)
+	if err == nil {
+		c.Cookie(&fiber.Cookie{
+			Name:     "arkauthn",
+			Value:    "",
+			Expires:  time.Now().Add(-1 * time.Hour), // Set to past time
+			HTTPOnly: true,
+			Secure:   strings.HasPrefix(vars.Config.Redirect, "https") || c.Protocol() == "https",
+			SameSite: "Lax",
+			Domain:   "." + rootDomain,
+		})
+	} else {
+		// Fallback if domain extraction fails, though login would have failed too
+		c.ClearCookie("arkauthn")
+	}
 	return c.Render("logout", fiber.Map{})
 }
 
