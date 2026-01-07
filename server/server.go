@@ -35,7 +35,7 @@ func Run(listen string) error {
 		if c.Protocol() == "https" {
 			c.Set("Strict-Transport-Security", "max-age=31536000; includeSubDomains")
 		}
-		c.Set("Content-Security-Policy", "default-src 'self'; script-src 'self' 'unsafe-eval'; style-src 'self'; font-src 'self'; img-src 'self' data:; worker-src 'self' blob:; connect-src 'self';")
+		c.Set("Content-Security-Policy", "default-src 'self'; script-src 'self' 'unsafe-eval'; style-src 'self' 'unsafe-inline'; font-src 'self'; img-src 'self' data:; worker-src 'self' blob:; connect-src 'self';")
 		return c.Next()
 	})
 
