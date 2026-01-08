@@ -2,6 +2,7 @@ package utils
 
 import (
 	"crypto/sha256"
+	"math/rand/v2"
 	"net"
 	"net/url"
 	"strings"
@@ -32,7 +33,7 @@ func ExtractRootDomain(urlStr string) (string, error) {
 
 	// 获取主机名
 	hostname := parsedURL.Hostname()
-	
+
 	// 检查是否为 IP 地址
 	if ip := net.ParseIP(hostname); ip != nil {
 		return hostname, nil
@@ -45,4 +46,15 @@ func ExtractRootDomain(urlStr string) (string, error) {
 	}
 
 	return domain, nil
+}
+
+func RandString(n int) string {
+	const charset = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789"
+	const csLen = len(charset)
+	result := make([]byte, n)
+	// 批量生成随机索引，减少函数调用次数
+	for i := range result {
+		result[i] = charset[rand.IntN(csLen)]
+	}
+	return string(result)
 }

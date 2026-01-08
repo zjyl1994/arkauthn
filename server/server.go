@@ -1,6 +1,7 @@
 package server
 
 import (
+	"fmt"
 	"mime"
 	"time"
 
@@ -8,8 +9,11 @@ import (
 	"github.com/gofiber/fiber/v2/middleware/filesystem"
 	"github.com/gofiber/fiber/v2/middleware/limiter"
 	"github.com/gofiber/template/html/v2"
+	"github.com/zjyl1994/arkauthn/infra/utils"
 	"github.com/zjyl1994/arkauthn/web"
 )
+
+const cspNonceKey = "__CSP_NONCE__"
 
 func Run(listen string) error {
 	mime.AddExtensionType(".wasm", "application/wasm")
@@ -24,6 +28,7 @@ func Run(listen string) error {
 		DisableStartupMessage: true,
 		Views:                 engine,
 		ViewsLayout:           "layout",
+		PassLocalsToViews:     true,
 	})
 
 	// Add Security Headers
@@ -35,7 +40,9 @@ func Run(listen string) error {
 		if c.Protocol() == "https" {
 			c.Set("Strict-Transport-Security", "max-age=31536000; includeSubDomains")
 		}
-		c.Set("Content-Security-Policy", "default-src 'self'; script-src 'self' 'unsafe-eval'; style-src 'self' 'unsafe-inline'; font-src 'self'; img-src 'self' data:; worker-src 'self' blob:; connect-src 'self';")
+		cspNonce := utils.RandString(32)
+		c.Locals(cspNonceKey, cspNonce)
+		c.Set("Content-Security-Policy", fmt.Sprintf("default-src 'self'; script-src 'self' 'nonce-%s' 'wasm-unsafe-eval'; style-src 'self' 'nonce-%s'; font-src 'self'; img-src 'self' data:; worker-src 'self' blob:; connect-src 'self'; object-src 'none'; base-uri 'self'; frame-ancestors 'self';", cspNonce, cspNonce))
 		return c.Next()
 	})
 

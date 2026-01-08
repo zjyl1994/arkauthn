@@ -9,4 +9,14 @@
     </div>
 </div>
 
-<script src="/index.js"></script>
+<script nonce="{{.__CSP_NONCE__}}">
+    document.addEventListener('DOMContentLoaded', function () {
+        const expireElement = document.getElementById('expire-time');
+        const timestamp = parseInt(expireElement.textContent);
+
+        if (!isNaN(timestamp)) {
+            const date = new Date(timestamp * 1000);
+            expireElement.textContent = date.toLocaleString();
+        }
+    });
+</script>
