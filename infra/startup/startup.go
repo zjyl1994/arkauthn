@@ -3,7 +3,6 @@ package startup
 import (
 	"encoding/json"
 	"flag"
-	"io"
 	"os"
 	"time"
 
@@ -27,6 +26,7 @@ func Start() error {
 				Listen:   "127.0.0.1:9008",
 				Redirect: "http://127.0.0.1:9008",
 				LogLevel: "info",
+				LogFile:  "arkauthn.log",
 				Secret:   utils.RandString(32),
 				Users: []vars.UserItem{
 					{
@@ -91,7 +91,7 @@ func Start() error {
 			MaxAge:     7,
 			Compress:   true,
 		}
-		logrus.SetOutput(io.MultiWriter(os.Stdout, fileLogger))
+		logrus.AddHook(utils.NewFileHook(fileLogger))
 	}
 	vars.CapInstance = cap.NewCap(utils.NewFreeCacheStorage(50 * 1024))
 	// start server
