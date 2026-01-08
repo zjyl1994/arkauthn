@@ -5,11 +5,14 @@
 
 ## 安装
 
-1. 复制 `setup/arkauthn.json` 到 `/etc/arkauthn.json`
 1. 复制 `setup/arkauthn.service` 到 `/etc/systemd/system/arkauthn.service`
+1. 编辑 `/etc/systemd/system/arkauthn.service`，指定 `WorkingDirectory`
 1. 运行 `systemctl daemon-reload`
 1. 运行 `systemctl enable arkauthn`
 1. 运行 `systemctl start arkauthn`
+
+运行后会在WorkingDirectory自动产生配置文件 `arkauthn.json`，默认用户为 `username`，密码为 `password`。
+密码支持使用明文和bcrypt哈希两种方式存储。
 
 ## Caddy 配置
 ```caddyfile
