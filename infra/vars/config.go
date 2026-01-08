@@ -10,6 +10,7 @@ type ConfigFile struct {
 	Jail           JailConfig `json:"jail"`
 	TokenExpire    int        `json:"token_expire"`
 	TrustedDomains []string   `json:"trusted_domains"`
+	TrustedProxies []string   `json:"trusted_proxies"`
 }
 
 type UserItem struct {

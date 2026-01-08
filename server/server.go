@@ -8,8 +8,10 @@ import (
 	"github.com/gofiber/fiber/v2"
 	"github.com/gofiber/fiber/v2/middleware/filesystem"
 	"github.com/gofiber/fiber/v2/middleware/limiter"
+	"github.com/gofiber/fiber/v2/middleware/recover"
 	"github.com/gofiber/template/html/v2"
 	"github.com/zjyl1994/arkauthn/infra/utils"
+	"github.com/zjyl1994/arkauthn/infra/vars"
 	"github.com/zjyl1994/arkauthn/web"
 )
 
@@ -25,11 +27,16 @@ func Run(listen string) error {
 
 	engine := html.NewFileSystem(embedAssets, ".html")
 	app := fiber.New(fiber.Config{
-		DisableStartupMessage: true,
-		Views:                 engine,
-		ViewsLayout:           "layout",
-		PassLocalsToViews:     true,
+		DisableStartupMessage:   true,
+		Views:                   engine,
+		ViewsLayout:             "layout",
+		PassLocalsToViews:       true,
+		EnableTrustedProxyCheck: len(vars.Config.TrustedProxies) > 0,
+		TrustedProxies:          vars.Config.TrustedProxies,
+		ProxyHeader:             fiber.HeaderXForwardedFor,
 	})
+
+	app.Use(recover.New())
 
 	// Add Security Headers
 	app.Use(func(c *fiber.Ctx) error {
