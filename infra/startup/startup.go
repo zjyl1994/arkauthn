@@ -22,6 +22,34 @@ func Start() error {
 	flag.StringVar(&configFile, "config", "config.json", "Config JSON path")
 	flag.Parse()
 	if configFile != "" {
+		if _, err := os.Stat(configFile); os.IsNotExist(err) {
+			defaultConfig := vars.ConfigFile{
+				Listen:   "127.0.0.1:9008",
+				Redirect: "http://127.0.0.1:9008",
+				LogLevel: "info",
+				Secret:   utils.RandString(32),
+				Users: []vars.UserItem{
+					{
+						Username: "username",
+						Password: "password",
+					},
+				},
+				Jail: vars.JailConfig{
+					Enabled:     true,
+					MaxAttempts: 5,
+					BanDuration: 300,
+				},
+			}
+			data, err := json.MarshalIndent(defaultConfig, "", "    ")
+			if err != nil {
+				return err
+			}
+			if err := os.WriteFile(configFile, data, 0644); err != nil {
+				return err
+			}
+			logrus.Infof("Created default config file: %s", configFile)
+		}
+
 		bConf, err := os.ReadFile(configFile)
 		if err != nil {
 			return err
@@ -31,7 +59,7 @@ func Start() error {
 			return err
 		}
 		if vars.Config.Listen == "" {
-			vars.Config.Listen = ":9008"
+			vars.Config.Listen = "127.0.0.1:9008"
 		}
 		if vars.Config.Redirect == "" {
 			vars.Config.Redirect = "http://127.0.0.1:9008"
@@ -47,9 +75,6 @@ func Start() error {
 				vars.Config.Jail.BanDuration = 300
 			}
 			vars.AuthRateLimiter = utils.NewErrorSlidingWindowLimiter(vars.Config.Jail.MaxAttempts, time.Duration(vars.Config.Jail.BanDuration)*time.Second)
-		}
-		if vars.Config.TokenExpire == 0 {
-			vars.Config.TokenExpire = 3600
 		}
 	}
 	// init log

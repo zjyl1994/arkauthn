@@ -62,6 +62,9 @@ func loginAuthnHandler(c *fiber.Ctx) error {
 	if req.CapToken == "" || !vars.CapInstance.ValidateToken(req.CapToken, false) {
 		return c.Status(fiber.StatusUnauthorized).SendString("Invalid cap token")
 	}
+	if req.Duration < 3600 || req.Duration > 31536000 {
+		req.Duration = 3600
+	}
 	ipAddr := c.IP()
 	if vars.AuthRateLimiter != nil && vars.AuthRateLimiter.IsLimited(ipAddr) {
 		logrus.Warnf("Too many login attempts %s", ipAddr)
@@ -87,10 +90,7 @@ func loginAuthnHandler(c *fiber.Ctx) error {
 		return c.Redirect(u.String())
 	}
 	// 生成JWT令牌
-	var dur = time.Duration(vars.Config.TokenExpire) * time.Second
-	if req.Duration >= 3600 && req.Duration <= 31536000 {
-		dur = time.Duration(req.Duration) * time.Second
-	}
+	dur := time.Duration(req.Duration) * time.Second
 	token, err := utils.GenerateToken(user, dur)
 	if err != nil {
 		return err
