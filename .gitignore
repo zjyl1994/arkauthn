@@ -25,5 +25,6 @@ go.work.sum
 .env
 
 *.log
-config.json
+arkauthn.keys.json
+arkauthn.users.json
 arkauthn

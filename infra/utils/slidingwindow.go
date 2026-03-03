@@ -9,7 +9,7 @@ import (
 type ErrorSlidingWindowLimiter struct {
 	maxErrors int           // 允许的最大错误次数
 	window    time.Duration // 窗口大小（秒）
-	errors    sync.Map      // 记录的错误时间戳列表
+	errors    map[string][]time.Time // 记录的错误时间戳列表
 	mu        sync.Mutex    // 互斥锁，保证并发安全
 }
 
@@ -18,6 +18,7 @@ func NewErrorSlidingWindowLimiter(maxErrors int, window time.Duration) *ErrorSli
 	return &ErrorSlidingWindowLimiter{
 		maxErrors: maxErrors,
 		window:    window,
+		errors:    make(map[string][]time.Time),
 	}
 }
 
@@ -28,9 +29,8 @@ func (l *ErrorSlidingWindowLimiter) IsLimited(ip string) bool {
 
 	now := time.Now()
 
-	errorList, ok := l.errors.Load(ip)
+	errors, ok := l.errors[ip]
 	if ok {
-		errors := errorList.([]time.Time)
 		// 清除过期的错误记录
 		cutoff := now.Add(-l.window)
 		// 找到第一个未过期的记录索引
@@ -38,17 +38,21 @@ func (l *ErrorSlidingWindowLimiter) IsLimited(ip string) bool {
 		for firstValid < len(errors) && errors[firstValid].Before(cutoff) {
 			firstValid++
 		}
-		
+
 		// 如果有过期记录，切片并更新回Map
 		if firstValid > 0 {
 			errors = errors[firstValid:]
-			l.errors.Store(ip, errors)
 		}
+		if len(errors) == 0 {
+			delete(l.errors, ip)
+			return false
+		}
+		l.errors[ip] = errors
 
 		// 如果当前窗口内的错误数量达到最大值，则返回true表示被限流
 		return len(errors) >= l.maxErrors
 	}
-	
+
 	return false
 }
 
@@ -57,12 +61,8 @@ func (l *ErrorSlidingWindowLimiter) RecordError(ip string) {
 	l.mu.Lock()
 	defer l.mu.Unlock()
 
-	errorList, ok := l.errors.Load(ip)
-	if ok {
-		errors := errorList.([]time.Time)
-		errors = append(errors, time.Now())
-		l.errors.Store(ip, errors)
-	} else {
-		l.errors.Store(ip, []time.Time{time.Now()})
-	}
+	now := time.Now()
+	errors := l.errors[ip]
+	errors = append(errors, now)
+	l.errors[ip] = errors
 }

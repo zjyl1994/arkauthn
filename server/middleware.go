@@ -3,7 +3,7 @@ package server
 import (
 	"time"
 
-	"github.com/gofiber/fiber/v2"
+	"github.com/gofiber/fiber/v3"
 	"github.com/samber/lo"
 	"github.com/zjyl1994/arkauthn/infra/utils"
 )
@@ -15,7 +15,7 @@ type authUserType struct {
 
 var authUserKey authUserType
 
-func authTokenMiddleware(c *fiber.Ctx) error {
+func authTokenMiddleware(c fiber.Ctx) error {
 	token, ok := lo.Coalesce(c.Cookies("arkauthn"), c.Get("X-Arkauthn"))
 	if ok {
 		username, expire, err := utils.ParseToken(token)

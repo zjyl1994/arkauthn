@@ -2,7 +2,6 @@ package utils
 
 import (
 	"errors"
-	"fmt"
 	"time"
 
 	"github.com/golang-jwt/jwt/v5"
@@ -41,14 +40,12 @@ func GenerateToken(username string, expireDuration time.Duration) (string, error
 	}
 
 	// 创建令牌
-	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
+	token := jwt.NewWithClaims(jwt.SigningMethodEdDSA, claims)
 
-	// 签名令牌
-	secret, err := loadTokenSecretByUserName(username)
-	if err != nil {
-		return "", err
+	if len(vars.Ed25519PrivateKey) == 0 {
+		return "", errors.New("密钥未初始化")
 	}
-	return token.SignedString(secret)
+	return token.SignedString(vars.Ed25519PrivateKey)
 }
 
 // ParseToken 解析JWT令牌
@@ -56,11 +53,13 @@ func GenerateToken(username string, expireDuration time.Duration) (string, error
 func ParseToken(tokenString string) (string, time.Time, error) {
 	// 解析令牌
 	token, err := jwt.ParseWithClaims(tokenString, &Claims{}, func(token *jwt.Token) (interface{}, error) {
-		claims, ok := token.Claims.(*Claims)
-		if !ok {
-			return "", ErrInvalidToken
+		if _, ok := token.Method.(*jwt.SigningMethodEd25519); !ok {
+			return nil, ErrInvalidToken
 		}
-		return loadTokenSecretByUserName(claims.Username)
+		if len(vars.Ed25519PublicKey) == 0 {
+			return nil, ErrInvalidToken
+		}
+		return vars.Ed25519PublicKey, nil
 	})
 
 	if err != nil {
@@ -99,17 +98,4 @@ func ValidateToken(tokenString string) (bool, error) {
 		return false, err
 	}
 	return true, nil
-}
-
-func loadTokenSecretByUserName(username string) ([]byte, error) {
-	for _, u := range vars.Config.Users {
-		if u.Username == username {
-			key := make([]byte, 0, len(vars.Config.Secret)+len(u.Nonce)+len(u.Password))
-			key = append(key, vars.Config.Secret...)
-			key = append(key, u.Nonce...)
-			key = append(key, u.Password...)
-			return key, nil
-		}
-	}
-	return nil, fmt.Errorf("用户 %s 不存在", username)
 }

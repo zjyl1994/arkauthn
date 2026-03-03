@@ -1,8 +1,8 @@
 package utils
 
 import (
+	"crypto/rand"
 	"crypto/sha256"
-	"math/rand/v2"
 	"net"
 	"net/url"
 	"strings"
@@ -51,10 +51,16 @@ func ExtractRootDomain(urlStr string) (string, error) {
 func RandString(n int) string {
 	const charset = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789"
 	const csLen = len(charset)
+	if n <= 0 {
+		return ""
+	}
 	result := make([]byte, n)
-	// 批量生成随机索引，减少函数调用次数
+	random := make([]byte, n)
+	if _, err := rand.Read(random); err != nil {
+		return ""
+	}
 	for i := range result {
-		result[i] = charset[rand.IntN(csLen)]
+		result[i] = charset[int(random[i])%csLen]
 	}
 	return string(result)
 }

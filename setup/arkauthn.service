@@ -6,7 +6,8 @@ Wants=network-online.target
 [Service]
 Restart=always
 Type=simple
-ExecStart=/usr/local/bin/arkauthn --config=/etc/arkauthn.json
+StateDirectory=arkauthn
+ExecStart=/usr/local/bin/arkauthn
 
 [Install]
 WantedBy=multi-user.target

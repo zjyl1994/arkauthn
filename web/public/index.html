@@ -5,7 +5,11 @@
             <div class="info-item">当前登录用户: <span>{{.username}}</span></div>
             <div class="info-item">会话有效期至: <span id="expire-time">{{.expire}}</span></div>
         </div>
-        <a href="/logout" class="logout-btn">登出</a>
+        <a href="/token" class="btn">生成密钥</a>
+        <form action="/logout" method="post">
+            <input type="hidden" name="csrf_token" value="{{.csrf}}" />
+            <button type="submit" class="btn">退出登录</button>
+        </form>
     </div>
 </div>
 

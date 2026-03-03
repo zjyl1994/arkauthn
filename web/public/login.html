@@ -27,8 +27,12 @@
             <input type="hidden" name="duration" id="duration-input" value="3600" />
 
             <input type="hidden" id="redirect" name="redirect" value="" />
-            <button type="submit">登录</button>
+            <button type="submit" class="btn">登录</button>
         </form>
+        <div class="form-loading hidden" id="login-loading">
+            <div class="spinner"></div>
+            <div class="loading-text">安全验证中...</div>
+        </div>
     </div>
 </div>
 
@@ -51,6 +55,7 @@
 
     const form = document.querySelector('.login-form');
     const submitBtn = form.querySelector('button[type="submit"]');
+    const formLoading = document.getElementById('login-loading');
     const usernameInput = form.querySelector('input[name="username"]');
 
     // Load saved username
@@ -79,9 +84,8 @@
 
         if (submitBtn.disabled) return;
 
-        const originalText = submitBtn.innerText;
         submitBtn.disabled = true;
-        submitBtn.innerText = '安全验证中...';
+        formLoading.classList.remove('hidden');
 
         try {
             const cap = new Cap({
@@ -100,7 +104,7 @@
             console.error(err);
             alert('验证失败，请重试');
             submitBtn.disabled = false;
-            submitBtn.innerText = originalText;
+            formLoading.classList.add('hidden');
         }
     });
 </script>

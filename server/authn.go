@@ -2,13 +2,15 @@ package server
 
 import (
 	"crypto/subtle"
+	"encoding/base64"
 	"fmt"
+	"net"
 	"net/http"
 	"net/url"
 	"strings"
 	"time"
 
-	"github.com/gofiber/fiber/v2"
+	"github.com/gofiber/fiber/v3"
 	"github.com/sirupsen/logrus"
 	"github.com/zjyl1994/arkauthn/infra/utils"
 	"github.com/zjyl1994/arkauthn/infra/vars"
@@ -21,7 +23,7 @@ func init() {
 	dummyBcryptHash, _ = bcrypt.GenerateFromPassword([]byte("dummy_password_for_timing_protection"), bcrypt.DefaultCost)
 }
 
-func forwardAuthHandler(c *fiber.Ctx) error {
+func forwardAuthHandler(c fiber.Ctx) error {
 	forwardMethod := c.Get("X-Forwarded-Method")
 	forwardUri := fmt.Sprintf("%s://%s%s", c.Get("X-Forwarded-Proto"), c.Get("X-Forwarded-Host"), c.Get("X-Forwarded-Uri"))
 	logrus.Debugf("ForwardAuth with %s %s", forwardMethod, forwardUri)
@@ -36,7 +38,7 @@ func forwardAuthHandler(c *fiber.Ctx) error {
 			query := u.Query()
 			query.Set("r", forwardUri)
 			u.RawQuery = query.Encode()
-			return c.Redirect(u.String(), fiber.StatusSeeOther)
+			return c.Redirect().Status(fiber.StatusSeeOther).To(u.String())
 		} else {
 			return c.SendStatus(http.StatusUnauthorized)
 		}
@@ -47,7 +49,7 @@ func forwardAuthHandler(c *fiber.Ctx) error {
 	return c.SendStatus(http.StatusNoContent)
 }
 
-func loginAuthnHandler(c *fiber.Ctx) error {
+func loginAuthnHandler(c fiber.Ctx) error {
 	var req struct {
 		Username string `json:"username" form:"username"`
 		Password string `json:"password" form:"password"`
@@ -55,9 +57,15 @@ func loginAuthnHandler(c *fiber.Ctx) error {
 		CapToken string `json:"cap_token" form:"cap_token"`
 		Duration int64  `json:"duration" form:"duration"`
 	}
-	err := c.BodyParser(&req)
+	err := c.Bind().Body(&req)
 	if err != nil {
 		return err
+	}
+	if len(req.Username) > 64 || len(req.Password) > 72 {
+		return c.Status(http.StatusBadRequest).SendString("Invalid input length")
+	}
+	if vars.NodeRole == vars.NodeRoleReplica {
+		return redirectToMaster(c, req.Redirect)
 	}
 	if req.CapToken == "" || !vars.CapInstance.ValidateToken(req.CapToken, false) {
 		return c.Status(fiber.StatusUnauthorized).SendString("Invalid cap token")
@@ -87,7 +95,7 @@ func loginAuthnHandler(c *fiber.Ctx) error {
 			q.Set("r", req.Redirect)
 		}
 		u.RawQuery = q.Encode()
-		return c.Redirect(u.String())
+		return c.Redirect().Status(fiber.StatusFound).To(u.String())
 	}
 	// 生成JWT令牌
 	dur := time.Duration(req.Duration) * time.Second
@@ -101,6 +109,10 @@ func loginAuthnHandler(c *fiber.Ctx) error {
 		return err
 	}
 	expireAt := time.Now().Add(dur)
+	domain := ""
+	if net.ParseIP(rootDomain) == nil && rootDomain != "localhost" && strings.Contains(rootDomain, ".") {
+		domain = "." + rootDomain
+	}
 	cookie := &fiber.Cookie{
 		Name:     "arkauthn",
 		Value:    token,
@@ -108,7 +120,7 @@ func loginAuthnHandler(c *fiber.Ctx) error {
 		HTTPOnly: true,
 		Secure:   strings.HasPrefix(vars.Config.Redirect, "https") || c.Protocol() == "https",
 		SameSite: "Lax",
-		Domain:   "." + rootDomain,
+		Domain:   domain,
 	}
 	c.Cookie(cookie)
 	// 重定向
@@ -138,67 +150,145 @@ func loginAuthnHandler(c *fiber.Ctx) error {
 					safeRedirect = true
 				}
 
-				// 2. 检查 TrustedDomains (支持子域名匹配)
+				// 2. 检查 TrustedDomain (支持子域名匹配)
 				if !safeRedirect {
-					for _, domain := range vars.Config.TrustedDomains {
-						// 允许完全相等 或 作为子域名 (e.g. "a.example.com" 匹配 "example.com")
-						if hostname == domain || strings.HasSuffix(hostname, "."+domain) {
-							safeRedirect = true
-							break
-						}
+					domain := vars.Config.TrustedDomain
+					if domain != "" && (hostname == domain || strings.HasSuffix(hostname, "."+domain)) {
+						safeRedirect = true
 					}
 				}
 			}
 		}
 
 		if safeRedirect {
-			return c.Redirect(req.Redirect, fiber.StatusSeeOther)
+			return c.Redirect().Status(fiber.StatusSeeOther).To(req.Redirect)
 		}
 		logrus.Warnf("Invalid redirect attempt to %s", req.Redirect)
 	}
 	return c.Render("index", fiber.Map{
 		"username": user,
 		"expire":   expireAt.Unix(),
+		"csrf":     ensureCsrfToken(c),
 	})
 }
 
-func indexHandler(c *fiber.Ctx) error {
+func indexHandler(c fiber.Ctx) error {
 	userinfo, ok := c.Locals(authUserKey).(authUserType)
 	if !ok { // 没有登录
+		if vars.NodeRole == vars.NodeRoleReplica {
+			return c.Redirect().Status(fiber.StatusSeeOther).To(vars.Config.Redirect)
+		}
 		return c.Render("login", fiber.Map{})
 	}
 	return c.Render("index", fiber.Map{
 		"username": userinfo.Username,
 		"expire":   userinfo.Expire.Unix(),
+		"csrf":     ensureCsrfToken(c),
 	})
 }
 
-func logoutHandler(c *fiber.Ctx) error {
-	rootDomain, err := utils.ExtractRootDomain(vars.Config.Redirect)
-	if err == nil {
-		c.Cookie(&fiber.Cookie{
-			Name:     "arkauthn",
-			Value:    "",
-			Expires:  time.Now().Add(-1 * time.Hour), // Set to past time
-			HTTPOnly: true,
-			Secure:   strings.HasPrefix(vars.Config.Redirect, "https") || c.Protocol() == "https",
-			SameSite: "Lax",
-			Domain:   "." + rootDomain,
-		})
-	} else {
-		// Fallback if domain extraction fails, though login would have failed too
-		c.ClearCookie("arkauthn")
+func tokenPageHandler(c fiber.Ctx) error {
+	if vars.NodeRole == vars.NodeRoleReplica {
+		return redirectToMaster(c, "/token")
 	}
+	userinfo, ok := c.Locals(authUserKey).(authUserType)
+	if !ok {
+		return c.Redirect().Status(fiber.StatusSeeOther).To("/")
+	}
+	return c.Render("token", fiber.Map{
+		"username": userinfo.Username,
+		"csrf":     ensureCsrfToken(c),
+	})
+}
+
+func tokenGenerateHandler(c fiber.Ctx) error {
+	if vars.NodeRole == vars.NodeRoleReplica {
+		u, err := url.Parse(vars.Config.Redirect)
+		if err != nil {
+			return c.SendStatus(http.StatusNotFound)
+		}
+		u.Path = "/api/token"
+		u.RawQuery = ""
+		return c.Redirect().Status(fiber.StatusTemporaryRedirect).To(u.String())
+	}
+	userinfo, ok := c.Locals(authUserKey).(authUserType)
+	if !ok {
+		return c.SendStatus(http.StatusUnauthorized)
+	}
+	var req struct {
+		Duration int64  `json:"duration" form:"duration"`
+		CapToken string `json:"cap_token" form:"cap_token"`
+	}
+	if err := c.Bind().Body(&req); err != nil {
+		return err
+	}
+	if vars.AuthRateLimiter != nil && vars.AuthRateLimiter.IsLimited(c.IP()) {
+		return c.Status(http.StatusTooManyRequests).SendString("Too many requests")
+	}
+	if req.CapToken == "" || !vars.CapInstance.ValidateToken(req.CapToken, false) {
+		return c.Status(http.StatusUnauthorized).SendString("Invalid cap token")
+	}
+	if req.Duration == 0 {
+		req.Duration = 3600
+	}
+	if req.Duration < 60 || req.Duration > 31536000 {
+		return c.Status(http.StatusBadRequest).SendString("Invalid duration")
+	}
+	dur := time.Duration(req.Duration) * time.Second
+	token, err := utils.GenerateToken(userinfo.Username, dur)
+	if err != nil {
+		return err
+	}
+	expireAt := time.Now().Add(dur)
+	return c.JSON(fiber.Map{
+		"token":     token,
+		"expire_at": expireAt.Unix(),
+	})
+}
+
+func logoutHandler(c fiber.Ctx) error {
+	csrfToken := c.FormValue("csrf_token")
+	cookieToken := c.Cookies("arkauthn_csrf")
+	if csrfToken == "" || cookieToken == "" || subtle.ConstantTimeCompare([]byte(csrfToken), []byte(cookieToken)) != 1 {
+		return c.SendStatus(http.StatusUnauthorized)
+	}
+	rootDomain, err := utils.ExtractRootDomain(vars.Config.Redirect)
+	if err != nil {
+		c.ClearCookie("arkauthn")
+		c.ClearCookie("arkauthn_csrf")
+		return c.Render("logout", fiber.Map{})
+	}
+	domain := ""
+	if net.ParseIP(rootDomain) == nil && rootDomain != "localhost" && strings.Contains(rootDomain, ".") {
+		domain = "." + rootDomain
+	}
+	c.Cookie(&fiber.Cookie{
+		Name:     "arkauthn",
+		Value:    "",
+		Expires:  time.Now().Add(-1 * time.Hour),
+		HTTPOnly: true,
+		Secure:   strings.HasPrefix(vars.Config.Redirect, "https") || c.Protocol() == "https",
+		SameSite: "Lax",
+		Domain:   domain,
+	})
+	c.Cookie(&fiber.Cookie{
+		Name:     "arkauthn_csrf",
+		Value:    "",
+		Expires:  time.Now().Add(-1 * time.Hour),
+		HTTPOnly: true,
+		Secure:   strings.HasPrefix(vars.Config.Redirect, "https") || c.Protocol() == "https",
+		SameSite: "Lax",
+		Domain:   domain,
+	})
 	return c.Render("logout", fiber.Map{})
 }
 
 func checkUser(username, password string) (string, bool) {
 	var foundUser *vars.UserItem
-	for _, u := range vars.Config.Users {
+	for i := range vars.Users {
+		u := &vars.Users[i]
 		if u.Username == username {
-			// Create a copy to avoid referencing loop variable
-			user := u
-			foundUser = &user
+			foundUser = u
 			break
 		}
 	}
@@ -208,12 +298,60 @@ func checkUser(username, password string) (string, bool) {
 			if bcrypt.CompareHashAndPassword([]byte(foundUser.Password), []byte(password)) == nil {
 				return foundUser.Username, true
 			}
-		} else if subtle.ConstantTimeCompare([]byte(password), []byte(foundUser.Password)) > 0 {
-			return foundUser.Username, true
+		} else {
+			if subtle.ConstantTimeCompare([]byte(foundUser.Password), []byte(password)) == 1 {
+				return foundUser.Username, true
+			}
+			bcrypt.CompareHashAndPassword(dummyBcryptHash, []byte(password))
 		}
 	} else {
 		// Timing attack protection: simulate a bcrypt comparison
 		bcrypt.CompareHashAndPassword(dummyBcryptHash, []byte(password))
 	}
 	return "", false
+}
+
+func publicConfigHandler(c fiber.Ctx) error {
+	if vars.NodeRole == vars.NodeRoleReplica {
+		return c.SendStatus(http.StatusNotFound)
+	}
+	return c.JSON(vars.PublicConfig{
+		Redirect:         vars.Config.Redirect,
+		Ed25519PublicKey: base64.StdEncoding.EncodeToString(vars.Ed25519PublicKey),
+	})
+}
+
+func redirectToMaster(c fiber.Ctx, redirect string) error {
+	u, err := url.Parse(vars.Config.Redirect)
+	if err != nil {
+		return err
+	}
+	q := u.Query()
+	if redirect != "" {
+		q.Set("r", redirect)
+	}
+	u.RawQuery = q.Encode()
+	return c.Redirect().Status(fiber.StatusSeeOther).To(u.String())
+}
+
+func ensureCsrfToken(c fiber.Ctx) string {
+	token := c.Cookies("arkauthn_csrf")
+	if token != "" {
+		return token
+	}
+	token = utils.RandString(32)
+	rootDomain, err := utils.ExtractRootDomain(vars.Config.Redirect)
+	domain := ""
+	if err == nil && net.ParseIP(rootDomain) == nil && rootDomain != "localhost" && strings.Contains(rootDomain, ".") {
+		domain = "." + rootDomain
+	}
+	c.Cookie(&fiber.Cookie{
+		Name:     "arkauthn_csrf",
+		Value:    token,
+		HTTPOnly: true,
+		Secure:   strings.HasPrefix(vars.Config.Redirect, "https") || c.Protocol() == "https",
+		SameSite: "Lax",
+		Domain:   domain,
+	})
+	return token
 }

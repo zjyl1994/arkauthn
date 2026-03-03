@@ -47,7 +47,7 @@ body {
     color: var(--primary-color);
 }
 
-.logout-btn {
+.btn {
     display: block;
     width: 100%;
     padding: 15px;
@@ -57,13 +57,85 @@ body {
     text-decoration: none;
     border-radius: 5px;
     transition: all 0.3s ease;
+    border: 0;
+    cursor: pointer;
+    font-family: 'Roboto', sans-serif;
+    font-size: 16px;
+    text-transform: uppercase;
+    font-weight: 500;
+    letter-spacing: 1px;
+    margin-top: 12px;
 }
 
-.logout-btn:hover {
+.btn:hover {
     background: var(--primary-hover);
     transform: translateY(-2px);
     box-shadow: 0 5px 10px rgba(0, 0, 0, 0.2);
 }
+
+.btn:active {
+    transform: translateY(0);
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
+}
+
+.form-loading {
+    position: absolute;
+    inset: 0;
+    background: rgba(255, 255, 255, 0.8);
+    border-radius: 10px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    z-index: 2;
+    gap: 12px;
+}
+
+.form-loading .spinner {
+    width: 26px;
+    height: 26px;
+    border-radius: 50%;
+    border: 3px solid rgba(26, 35, 126, 0.2);
+    border-top-color: var(--primary-color);
+    animation: spin 0.8s linear infinite;
+}
+
+.form-loading .loading-text {
+    color: var(--primary-color);
+    font-size: 14px;
+    font-weight: 500;
+}
+
+.btn.loading {
+    position: relative;
+    padding-left: 38px;
+    opacity: 0.9;
+}
+
+.btn.loading::before {
+    content: "";
+    position: absolute;
+    left: 14px;
+    top: 50%;
+    width: 14px;
+    height: 14px;
+    margin-top: -7px;
+    border-radius: 50%;
+    border: 2px solid rgba(255, 255, 255, 0.6);
+    border-top-color: #fff;
+    animation: spin 0.8s linear infinite;
+}
+
+.btn.loading:hover {
+    transform: none;
+    box-shadow: none;
+}
+
+.btn.loading:active {
+    transform: none;
+    box-shadow: none;
+}
+
 
 .form {
     position: relative;
@@ -107,34 +179,6 @@ body {
     box-shadow: 0 0 0 2px rgba(74, 111, 165, 0.2);
 }
 
-.form button {
-    font-family: 'Roboto', sans-serif;
-    text-transform: uppercase;
-    font-weight: 500;
-    background: var(--primary-color);
-    width: 100%;
-    border: 0;
-    border-radius: 5px;
-    padding: 15px;
-    color: #FFFFFF;
-    font-size: 16px;
-    transition: all 0.3s ease;
-    cursor: pointer;
-    letter-spacing: 1px;
-    margin-top: 10px;
-}
-
-.form button:hover {
-    background: var(--primary-hover);
-    transform: translateY(-2px);
-    box-shadow: 0 5px 10px rgba(0, 0, 0, 0.2);
-}
-
-.form button:active {
-    transform: translateY(0);
-    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
-}
-
 .error-message {
     color: var(--error-color);
     margin-bottom: 15px;
@@ -159,6 +203,11 @@ body {
     to { opacity: 1; transform: translateY(0); }
 }
 
+@keyframes spin {
+    from { transform: rotate(0deg); }
+    to { transform: rotate(360deg); }
+}
+
 .logout-message {
     text-align: center;
     margin: 30px 0;
@@ -170,22 +219,6 @@ body {
     color: #000;
 }
 
-.login-btn {
-    display: inline-block;
-    padding: 12px 24px;
-    background: var(--primary-color);
-    color: white;
-    text-decoration: none;
-    border-radius: 5px;
-    transition: all 0.3s ease;
-    margin-bottom: 10px;
-}
-
-.login-btn:hover {
-    background: var(--primary-hover);
-    transform: translateY(-2px);
-    box-shadow: 0 5px 10px rgba(0, 0, 0, 0.2);
-}
 
 /* Duration Selector Styles */
 .duration-selector {
@@ -245,4 +278,53 @@ body {
 
 .duration-selector input[type="radio"]:checked:hover + span {
     background: #fff;
+}
+
+.token-page {
+    max-width: 520px;
+}
+
+.duration-row {
+    display: block;
+    margin-bottom: 15px;
+}
+
+.duration-row input {
+    width: 100%;
+}
+
+
+.token-result {
+    margin-top: 20px;
+    text-align: left;
+}
+
+.token-result textarea {
+    width: 100%;
+    min-height: 140px;
+    resize: vertical;
+    padding: 12px;
+    border-radius: 5px;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    background: var(--input-bg);
+    color: var(--text-color);
+    font-size: 14px;
+}
+
+.token-actions {
+    margin-top: 10px;
+}
+
+.token-actions button {
+    width: 100%;
+}
+
+.token-expire {
+    margin-top: 10px;
+    font-size: 14px;
+    color: var(--text-color);
+}
+
+.hidden {
+    display: none;
 }

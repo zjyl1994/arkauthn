@@ -1,0 +1,151 @@
+<div class="profile-page token-page">
+    <div class="form">
+        <h1>&#9820; ARKAUTHN</h1>
+        <div class="profile-info">
+            <div class="info-item">当前登录用户: <span>{{.username}}</span></div>
+        </div>
+        <form class="token-form">
+            <div class="duration-row">
+                <input type="datetime-local" id="expire-time-input" required />
+            </div>
+            <button type="submit" class="btn">生成JWT</button>
+        </form>
+        <div class="error-message" id="token-error"></div>
+        <div class="token-result hidden">
+            <textarea id="token-output" readonly></textarea>
+            <div class="token-actions">
+                <button type="button" id="copy-btn" class="btn">复制</button>
+            </div>
+            <div class="token-expire">有效期至: <span id="token-expire"></span></div>
+        </div>
+        <a href="/" class="btn">返回</a>
+        <div class="form-loading hidden" id="token-loading">
+            <div class="spinner"></div>
+            <div class="loading-text">安全验证中...</div>
+        </div>
+    </div>
+</div>
+
+<script type="module" nonce="{{.__CSP_NONCE__}}">
+    window.CAP_CUSTOM_WASM_URL = new URL('/vendor/capjs/cap_wasm.min.js', window.location.href).href;
+    window.CAP_CSS_NONCE = '{{.__CSP_NONCE__}}';
+    const { default: Cap } = await import('/vendor/capjs/cap.js');
+
+    const initTokenPage = () => {
+        const form = document.querySelector('.token-form');
+        const expireTimeInput = document.getElementById('expire-time-input');
+        const tokenError = document.getElementById('token-error');
+        const tokenResult = document.querySelector('.token-result');
+        const tokenOutput = document.getElementById('token-output');
+        const tokenExpire = document.getElementById('token-expire');
+        const copyBtn = document.getElementById('copy-btn');
+        const submitBtn = form.querySelector('button[type="submit"]');
+        const formLoading = document.getElementById('token-loading');
+
+        const showError = (message) => {
+            tokenError.textContent = message;
+            tokenError.style.display = 'block';
+        };
+
+        const clearError = () => {
+            tokenError.textContent = '';
+            tokenError.style.display = 'none';
+        };
+
+        const toLocalDateTimeValue = (date) => {
+            const pad = (num) => String(num).padStart(2, '0');
+            return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}T${pad(date.getHours())}:${pad(date.getMinutes())}`;
+        };
+
+        const setDefaultExpireTime = () => {
+            const now = new Date();
+            const defaultExpire = new Date(now.getTime() + 365 * 24 * 60 * 60 * 1000);
+            expireTimeInput.value = toLocalDateTimeValue(defaultExpire);
+        };
+
+        setDefaultExpireTime();
+
+        form.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            clearError();
+            tokenResult.classList.add('hidden');
+
+            if (!expireTimeInput.value) {
+                showError('请选择有效的过期时间');
+                return;
+            }
+            const expireAt = new Date(expireTimeInput.value);
+            if (Number.isNaN(expireAt.getTime())) {
+                showError('请选择有效的过期时间');
+                return;
+            }
+            const duration = Math.floor((expireAt.getTime() - Date.now()) / 1000);
+            if (duration < 60 || duration > 31536000) {
+                showError('过期时间范围为1分钟至365天');
+                return;
+            }
+
+            submitBtn.disabled = true;
+            formLoading.classList.remove('hidden');
+            try {
+                const cap = new Cap({
+                    apiEndpoint: '/api/cap/',
+                });
+                const solution = await cap.solve();
+                const resp = await fetch('/api/token', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({ duration, cap_token: solution.token }),
+                });
+                if (!resp.ok) {
+                    const text = await resp.text();
+                    showError(text || '生成失败，请重试');
+                    return;
+                }
+                const data = await resp.json();
+                tokenOutput.value = data.token || '';
+                if (data.expire_at) {
+                    tokenExpire.textContent = new Date(data.expire_at * 1000).toLocaleString();
+                } else {
+                    tokenExpire.textContent = '';
+                }
+                tokenResult.classList.remove('hidden');
+            } catch (err) {
+                showError(err?.message || '生成失败，请重试');
+            } finally {
+                submitBtn.disabled = false;
+                formLoading.classList.add('hidden');
+            }
+        });
+
+        copyBtn.addEventListener('click', async () => {
+            const text = tokenOutput.value;
+            if (!text) {
+                return;
+            }
+            try {
+                await navigator.clipboard.writeText(text);
+                copyBtn.textContent = '已复制';
+                setTimeout(() => {
+                    copyBtn.textContent = '复制';
+                }, 1500);
+            } catch (err) {
+                tokenOutput.focus();
+                tokenOutput.select();
+                document.execCommand('copy');
+                copyBtn.textContent = '已复制';
+                setTimeout(() => {
+                    copyBtn.textContent = '复制';
+                }, 1500);
+            }
+        });
+    };
+
+    if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', initTokenPage);
+    } else {
+        initTokenPage();
+    }
+</script>
